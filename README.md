@@ -1,111 +1,122 @@
-🚀 C-RAG: Corrective Retrieval-Augmented Generation
+# 🚀 C-RAG: Corrective Retrieval-Augmented Generation
 
 C-RAG is a modular implementation of a Corrective Retrieval-Augmented Generation (RAG) pipeline designed to improve answer reliability by validating, filtering, and refining retrieved context before final generation.
 
-This project demonstrates:
+---
 
-📄 Document retrieval
+## 📌 Features
 
-🧠 Context grading
+- Document retrieval  
+- Context grading  
+- Strip extraction and filtering  
+- Context refinement  
+- Verified final answer generation  
 
-🧹 Strip extraction and filtering
+---
 
-🔁 Context refinement
-
-✅ Verified final answer generation
-
-🧠 Motivation
+## 🧠 Motivation
 
 Standard RAG systems often:
 
-Retrieve partially relevant documents
-
-Use weak context directly in generation
-
-Hallucinate when retrieval quality is low
+- Retrieve partially relevant documents  
+- Use weak context directly in generation  
+- Hallucinate when retrieval quality is low  
 
 C-RAG introduces a corrective layer that:
 
-Grades retrieved documents
+- Grades retrieved documents  
+- Extracts relevant text strips  
+- Filters weak or noisy context  
+- Refines context before final generation  
 
-Extracts relevant text strips
+This results in a more reliable and interpretable RAG pipeline.
 
-Filters weak or noisy context
+---
 
-Refines context before final generation
+## 🏗 Project Structure
 
-The result is a more reliable and interpretable RAG pipeline.
-
-🏗 Project Structure
+```
 C-RAG/
 │
-├── main.py              # Entry point
-├── nodes.py             # Pipeline logic (orchestrator + workers)
-├── rag_state.py         # Shared state schema
-├── documents/           # Local document store
+├── main.py
+├── nodes.py
+├── rag_state.py
+├── documents/
 ├── requirements.txt
-└── .env                 # Environment variables (not committed)
+└── .env
+```
 
-⚙️ Pipeline Flow
-User Query
-    ↓
-Retriever
-    ↓
-Document Grading
-    ↓
-Strip Extraction
-    ↓
-Strip Filtering
-    ↓
-Context Refinement
-    ↓
-Final Answer Generation
+---
 
+## ⚙️ Pipeline Flow
 
-Each stage updates a shared state object, making the system modular and easy to debug.
+User Query  
+↓  
+Retriever  
+↓  
+Document Grading  
+↓  
+Strip Extraction  
+↓  
+Strip Filtering  
+↓  
+Context Refinement  
+↓  
+Final Answer Generation  
 
-🚀 Installation
+---
+
+## 🚀 Installation
 
 Clone the repository:
 
-git clone https://github.com/your-username/C-RAG.git
-cd C-RAG
+```
+git clone https://github.com/Darsh-Nandu/Corrective-Retrieval-Augmented-Generation
+```
 
+Create virtual environment:
 
-Create a virtual environment:
-
+```
 python -m venv crag_venv
+```
 
+Activate:
 
-Activate environment:
-
-Windows
-
+Windows:
+```
 crag_venv\Scripts\activate
+```
 
-
-Linux / Mac
-
+Mac/Linux:
+```
 source crag_venv/bin/activate
-
+```
 
 Install dependencies:
 
+```
 pip install -r requirements.txt
+```
 
-🔐 Environment Variables
+---
 
-Create a .env file in the root directory:
+## 🔐 Environment Variables
 
+Create a `.env` file:
+
+```
 OPENAI_API_KEY=your_api_key_here
+```
 
+Make sure `.env` is added to `.gitignore`.
 
-Make sure .env is added to .gitignore.
+---
 
-▶️ Usage
+## ▶️ Usage
 
-Modify the query inside main.py:
+Modify the query inside `main.py`:
 
+```python
 run({
     "question": "Batch normalization vs layer normalization",
     "docs": [],
@@ -116,53 +127,25 @@ run({
     "kept_strips": [],
     "refined_context": "",
 })
+```
 
+Run:
 
-Run the pipeline:
-
+```
 python main.py
+```
 
-🧩 Core Components
-rag_state.py
+---
 
-Defines the shared structured state passed across pipeline stages.
+## 🎯 Goals
 
-nodes.py
+- Improve factual reliability in RAG systems  
+- Reduce hallucinations  
+- Make RAG pipelines modular and inspectable  
+- Provide a clean educational implementation  
 
-Contains:
+---
 
-Orchestrator logic
+## ⭐ Support
 
-Worker nodes
-
-Reducer logic
-
-Implements the corrective retrieval strategy.
-
-documents/
-
-Local knowledge base used for retrieval.
-
-🎯 Goals
-
-Improve factual reliability in RAG systems
-
-Reduce hallucinations
-
-Make RAG pipelines modular and inspectable
-
-Provide a clean educational implementation
-
-🔮 Future Improvements
-
-Hybrid retrieval (BM25 + embeddings)
-
-Cross-encoder re-ranking
-
-Confidence scoring
-
-Streaming responses
-
-Web interface
-
-Deployment-ready architecture
+If you find this project useful, consider giving it a star.
