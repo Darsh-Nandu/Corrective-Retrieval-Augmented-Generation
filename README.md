@@ -1,108 +1,103 @@
-# 🚀 C-RAG: Corrective Retrieval-Augmented Generation
+# C-RAG: Corrective Retrieval-Augmented Generation
 
-C-RAG is a modular implementation of a Corrective Retrieval-Augmented Generation (RAG) pipeline designed to improve answer reliability by validating, filtering, and refining retrieved context before final generation.
-
----
-
-## 📌 Features
-
-- Document retrieval  
-- Context grading  
-- Strip extraction and filtering  
-- Context refinement  
-- Verified final answer generation  
+C-RAG is a modular implementation of a Corrective Retrieval-Augmented Generation (RAG) pipeline. It improves answer reliability by systematically validating, filtering, and refining retrieved context prior to final generation — addressing core failure modes common in standard RAG architectures.
 
 ---
 
-## 🧠 Motivation
+## Overview
 
-Standard RAG systems often:
-
-- Retrieve partially relevant documents  
-- Use weak context directly in generation  
-- Hallucinate when retrieval quality is low  
-
-C-RAG introduces a corrective layer that:
-
-- Grades retrieved documents  
-- Extracts relevant text strips  
-- Filters weak or noisy context  
-- Refines context before final generation  
-
-This results in a more reliable and interpretable RAG pipeline.
+Standard RAG systems frequently suffer from three interconnected problems: retrieval of partially relevant documents, direct use of weak context during generation, and hallucination when retrieval quality is low. C-RAG introduces a corrective layer between retrieval and generation that grades documents, extracts relevant text strips, filters noisy context, and refines it before producing a final answer. The result is a more reliable, interpretable, and auditable pipeline.
 
 ---
 
-## 🏗 Project Structure
+## Features
+
+- **Document Retrieval** — Fetches candidate documents based on the user query
+- **Context Grading** — Evaluates retrieved documents for relevance and quality
+- **Strip Extraction** — Isolates the most pertinent text segments from each document
+- **Strip Filtering** — Removes weak or noisy strips that could degrade generation
+- **Context Refinement** — Consolidates and polishes the surviving context
+- **Verified Answer Generation** — Produces a final answer grounded in validated context
+
+---
+
+## Motivation
+
+Retrieval-Augmented Generation works best when the context fed to the language model is accurate and relevant. In practice, retrievers often return documents that are only partially on-topic, and using such context without correction leads to hallucinated or low-confidence outputs.
+
+C-RAG addresses this gap by inserting a multi-stage corrective process between retrieval and generation. Each stage is independently auditable, making the pipeline transparent and easy to debug or extend.
+
+---
+
+## Pipeline
+
+```
+User Query
+    │
+    ▼
+Retriever
+    │
+    ▼
+Document Grading
+    │
+    ▼
+Strip Extraction
+    │
+    ▼
+Strip Filtering
+    │
+    ▼
+Context Refinement
+    │
+    ▼
+Final Answer Generation
+```
+
+---
+
+## Project Structure
 
 ```
 C-RAG/
-│
-├── main.py
-├── nodes.py
-├── rag_state.py
-├── documents/
-├── requirements.txt
-└── .env
+├── main.py               # Entry point; configure and run the pipeline
+├── nodes.py              # Individual pipeline stage implementations
+├── rag_state.py          # Shared state schema across pipeline nodes
+├── documents/            # Source documents for retrieval
+├── requirements.txt      # Python dependencies
+└── .env                  # Environment variables (API keys, config)
 ```
 
 ---
 
-## ⚙️ Pipeline Flow
+## Installation
 
-User Query  
-↓  
-Retriever  
-↓  
-Document Grading  
-↓  
-Strip Extraction  
-↓  
-Strip Filtering  
-↓  
-Context Refinement  
-↓  
-Final Answer Generation  
+**1. Clone the repository**
 
----
-
-## 🚀 Installation
-
-Clone the repository:
-
-```
+```bash
 git clone https://github.com/Darsh-Nandu/Corrective-Retrieval-Augmented-Generation
+cd Corrective-Retrieval-Augmented-Generation
 ```
 
-Create virtual environment:
+**2. Create and activate a virtual environment**
 
-```
+```bash
 python -m venv crag_venv
 ```
 
-Activate:
+- **Windows:** `crag_venv\Scripts\activate`
+- **macOS / Linux:** `source crag_venv/bin/activate`
 
-Windows:
-```
-crag_venv\Scripts\activate
-```
+**3. Install dependencies**
 
-Mac/Linux:
-```
-source crag_venv/bin/activate
-```
-
-Install dependencies:
-
-```
+```bash
 pip install -r requirements.txt
 ```
 
 ---
 
-## ▶️ Usage
+## Usage
 
-Modify the query inside `main.py`:
+Open `main.py` and set your query in the `run()` call:
 
 ```python
 run({
@@ -117,23 +112,35 @@ run({
 })
 ```
 
-Run:
+Then execute the pipeline:
 
-```
+```bash
 python main.py
 ```
 
 ---
 
-## 🎯 Goals
+## Goals
 
-- Improve factual reliability in RAG systems  
-- Reduce hallucinations  
-- Make RAG pipelines modular and inspectable  
-- Provide a clean educational implementation  
+- Improve factual reliability in RAG systems
+- Reduce hallucinations through structured context validation
+- Provide a modular, inspectable pipeline architecture
+- Serve as a clean reference implementation for corrective RAG research
 
 ---
 
-## ⭐ Support
+## Contributing
 
-If you find this project useful, consider giving it a star.
+Contributions, issues, and feature requests are welcome. Please open an issue to discuss proposed changes before submitting a pull request.
+
+---
+
+## License
+
+This project is open source.
+
+---
+
+## Acknowledgements
+
+If you find this project useful in your work or research, consider giving it a star on GitHub — it helps others discover the project.
