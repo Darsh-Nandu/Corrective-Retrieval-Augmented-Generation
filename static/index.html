@@ -1,0 +1,667 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>C-RAG — Corrective Retrieval-Augmented Generation</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #060610;
+    --surface: #0e0e1a;
+    --surface2: #16162a;
+    --border: #252540;
+    --text: #e2e2f0;
+    --muted: #6868a0;
+    --primary: #7c6cff;
+    --primary-dim: rgba(124,108,255,0.12);
+    --primary-glow: rgba(124,108,255,0.3);
+    --green: #3de68b;
+    --green-dim: rgba(61,230,139,0.12);
+    --yellow: #fbbf24;
+    --yellow-dim: rgba(251,191,36,0.12);
+    --red: #f87171;
+    --red-dim: rgba(248,113,113,0.12);
+    --blue: #60a5fa;
+    --mono: 'Space Mono', monospace;
+    --sans: 'Inter', sans-serif;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    line-height: 1.6;
+    overflow-x: hidden;
+  }
+
+  /* ── NAV ── */
+  nav {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 100;
+    background: rgba(6,6,16,0.85);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 40px;
+    height: 56px;
+  }
+  .nav-logo {
+    font-family: var(--mono);
+    font-size: 13px;
+    color: var(--primary);
+    letter-spacing: 0.08em;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .nav-logo-dot {
+    width: 7px; height: 7px;
+    background: var(--primary);
+    border-radius: 50%;
+    animation: pulse 2.5s ease-in-out infinite;
+  }
+  @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.3;transform:scale(0.7)} }
+  .nav-links {
+    display: flex;
+    gap: 28px;
+    font-size: 13px;
+    color: var(--muted);
+  }
+  .nav-links a {
+    color: inherit;
+    text-decoration: none;
+    transition: color 0.2s;
+  }
+  .nav-links a:hover { color: var(--text); }
+  .nav-cta {
+    background: var(--primary);
+    color: white;
+    text-decoration: none;
+    padding: 7px 18px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 500;
+    transition: all 0.2s;
+  }
+  .nav-cta:hover { opacity: 0.85; transform: translateY(-1px); }
+
+  /* ── HERO ── */
+  .hero {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 100px 24px 60px;
+    position: relative;
+  }
+  .hero-bg {
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(ellipse 80% 50% at 50% 0%, rgba(124,108,255,0.15), transparent),
+      radial-gradient(ellipse 50% 40% at 80% 80%, rgba(61,230,139,0.07), transparent);
+    pointer-events: none;
+  }
+  .hero-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--primary-dim);
+    border: 1px solid rgba(124,108,255,0.3);
+    color: var(--primary);
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    padding: 5px 14px;
+    border-radius: 20px;
+    margin-bottom: 28px;
+  }
+  .hero h1 {
+    font-size: clamp(36px, 6vw, 72px);
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    line-height: 1.1;
+    margin-bottom: 8px;
+  }
+  .hero h1 span {
+    background: linear-gradient(135deg, var(--primary) 0%, var(--blue) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .hero-sub {
+    font-size: clamp(16px, 2.5vw, 22px);
+    color: var(--muted);
+    font-weight: 400;
+    margin-bottom: 16px;
+  }
+  .hero-desc {
+    max-width: 580px;
+    color: #9090b8;
+    font-size: 15px;
+    line-height: 1.7;
+    margin-bottom: 40px;
+  }
+  .hero-actions {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+  .btn-primary {
+    background: var(--primary);
+    color: white;
+    text-decoration: none;
+    padding: 12px 28px;
+    border-radius: 10px;
+    font-size: 15px;
+    font-weight: 500;
+    transition: all 0.2s;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .btn-primary:hover { opacity: 0.85; transform: translateY(-2px); box-shadow: 0 8px 24px var(--primary-glow); }
+  .btn-ghost {
+    background: transparent;
+    color: var(--text);
+    text-decoration: none;
+    padding: 12px 28px;
+    border-radius: 10px;
+    font-size: 15px;
+    font-weight: 500;
+    border: 1px solid var(--border);
+    transition: all 0.2s;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .btn-ghost:hover { border-color: var(--primary); color: var(--primary); }
+
+  /* ── PIPELINE DIAGRAM ── */
+  section { padding: 80px 24px; }
+  .section-inner { max-width: 900px; margin: 0 auto; }
+  .section-label {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.15em;
+    color: var(--primary);
+    text-transform: uppercase;
+    margin-bottom: 12px;
+  }
+  .section-title {
+    font-size: clamp(24px, 4vw, 40px);
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    margin-bottom: 16px;
+  }
+  .section-desc {
+    color: #8888b0;
+    font-size: 15px;
+    line-height: 1.7;
+    max-width: 600px;
+    margin-bottom: 48px;
+  }
+
+  /* Pipeline flow */
+  .pipeline {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0;
+  }
+  .pipe-node {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px 24px;
+    width: 100%;
+    max-width: 400px;
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    transition: border-color 0.3s, box-shadow 0.3s;
+    position: relative;
+  }
+  .pipe-node:hover {
+    border-color: var(--primary);
+    box-shadow: 0 0 20px var(--primary-glow);
+  }
+  .pipe-node.green:hover { border-color: var(--green); box-shadow: 0 0 20px rgba(61,230,139,0.2); }
+  .pipe-node.yellow:hover { border-color: var(--yellow); box-shadow: 0 0 20px rgba(251,191,36,0.2); }
+  .pipe-node.red:hover { border-color: var(--red); box-shadow: 0 0 20px rgba(248,113,113,0.15); }
+
+  .pipe-icon {
+    width: 36px; height: 36px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 17px;
+    flex-shrink: 0;
+    background: var(--primary-dim);
+  }
+  .pipe-icon.green { background: var(--green-dim); }
+  .pipe-icon.yellow { background: var(--yellow-dim); }
+  .pipe-icon.red { background: var(--red-dim); }
+  .pipe-icon.blue { background: rgba(96,165,250,0.12); }
+
+  .pipe-info { flex: 1; }
+  .pipe-name {
+    font-weight: 600;
+    font-size: 14px;
+    margin-bottom: 3px;
+  }
+  .pipe-detail {
+    font-size: 12px;
+    color: var(--muted);
+    font-family: var(--mono);
+  }
+
+  .pipe-arrow {
+    width: 2px;
+    height: 28px;
+    background: var(--border);
+    margin: 0 auto;
+  }
+
+  /* Verdict fork */
+  .pipe-fork {
+    width: 100%;
+    max-width: 700px;
+    margin: 0 auto;
+  }
+  .fork-label {
+    text-align: center;
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--muted);
+    letter-spacing: 0.1em;
+    margin-bottom: 16px;
+  }
+  .fork-branches {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 12px;
+    position: relative;
+  }
+  .fork-branch {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+  }
+  .fork-verdict {
+    padding: 5px 14px;
+    border-radius: 20px;
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    border: 1px solid;
+  }
+  .fork-verdict.correct { background: var(--green-dim); border-color: rgba(61,230,139,0.4); color: var(--green); }
+  .fork-verdict.ambiguous { background: var(--yellow-dim); border-color: rgba(251,191,36,0.4); color: var(--yellow); }
+  .fork-verdict.incorrect { background: var(--red-dim); border-color: rgba(248,113,113,0.3); color: var(--red); }
+
+  .fork-step {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-size: 12px;
+    color: var(--muted);
+    text-align: center;
+    width: 100%;
+    font-family: var(--mono);
+  }
+  .fork-arrow { width: 2px; height: 16px; background: var(--border); }
+  .fork-merge-arrow {
+    width: 2px;
+    height: 24px;
+    background: var(--border);
+    margin: 0 auto;
+  }
+
+  /* ── FEATURES ── */
+  .features-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 16px;
+  }
+  .feature-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px;
+    transition: border-color 0.3s, transform 0.2s;
+  }
+  .feature-card:hover { border-color: var(--primary); transform: translateY(-2px); }
+  .feature-icon { font-size: 24px; margin-bottom: 12px; }
+  .feature-title { font-weight: 600; font-size: 15px; margin-bottom: 8px; }
+  .feature-text { font-size: 13px; color: var(--muted); line-height: 1.6; }
+
+  /* ── SETUP ── */
+  .setup-steps { display: flex; flex-direction: column; gap: 24px; }
+  .step {
+    display: flex;
+    gap: 20px;
+    align-items: flex-start;
+  }
+  .step-num {
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    background: var(--primary-dim);
+    border: 1px solid rgba(124,108,255,0.3);
+    color: var(--primary);
+    font-family: var(--mono);
+    font-size: 13px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+  .step-content { flex: 1; }
+  .step-title { font-weight: 600; font-size: 15px; margin-bottom: 6px; }
+  .step-text { font-size: 13px; color: var(--muted); margin-bottom: 10px; line-height: 1.6; }
+  pre {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px 16px;
+    font-family: var(--mono);
+    font-size: 12px;
+    color: #a0a0d0;
+    overflow-x: auto;
+    line-height: 1.7;
+  }
+  code { color: var(--green); }
+
+  /* ── FOOTER ── */
+  footer {
+    border-top: 1px solid var(--border);
+    padding: 32px 40px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 13px;
+    color: var(--muted);
+  }
+  footer a { color: var(--muted); text-decoration: none; }
+  footer a:hover { color: var(--text); }
+
+  /* divider */
+  .divider { border: none; border-top: 1px solid var(--border); margin: 0; }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-logo">
+    <div class="nav-logo-dot"></div>
+    C-RAG
+  </div>
+  <div class="nav-links">
+    <a href="#pipeline">Pipeline</a>
+    <a href="#features">Features</a>
+    <a href="#setup">Setup</a>
+  </div>
+  <a class="nav-cta" href="https://github.com/Darsh-Nandu/Corrective-Retrieval-Augmented-Generation" target="_blank">
+    View on GitHub →
+  </a>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-bg"></div>
+  <div class="hero-badge">
+    <span>●</span> LangGraph · Ollama · FAISS · Tavily
+  </div>
+  <h1><span>Corrective</span> RAG</h1>
+  <p class="hero-sub">Retrieval-Augmented Generation that knows when it's wrong</p>
+  <p class="hero-desc">
+    A modular LangGraph pipeline that grades retrieved documents, routes to web search when context is weak, filters noisy sentences, and only generates when the context can be trusted.
+  </p>
+  <div class="hero-actions">
+    <a class="btn-primary" href="https://github.com/Darsh-Nandu/Corrective-Retrieval-Augmented-Generation" target="_blank">
+      ★ Star on GitHub
+    </a>
+    <a class="btn-ghost" href="#pipeline">
+      See how it works ↓
+    </a>
+  </div>
+</section>
+
+<hr class="divider"/>
+
+<!-- PIPELINE -->
+<section id="pipeline">
+  <div class="section-inner">
+    <div class="section-label">Architecture</div>
+    <h2 class="section-title">The corrective pipeline</h2>
+    <p class="section-desc">
+      Unlike standard RAG which generates blindly from whatever was retrieved, C-RAG scores every chunk, routes to web search when confidence is low, and filters context sentence-by-sentence before generation.
+    </p>
+
+    <div class="pipeline">
+
+      <div class="pipe-node">
+        <div class="pipe-icon">💬</div>
+        <div class="pipe-info">
+          <div class="pipe-name">User Query</div>
+          <div class="pipe-detail">Natural language question</div>
+        </div>
+      </div>
+
+      <div class="pipe-arrow"></div>
+
+      <div class="pipe-node">
+        <div class="pipe-icon">🔍</div>
+        <div class="pipe-info">
+          <div class="pipe-name">Retrieve</div>
+          <div class="pipe-detail">FAISS similarity search → top-k chunks</div>
+        </div>
+      </div>
+
+      <div class="pipe-arrow"></div>
+
+      <div class="pipe-node">
+        <div class="pipe-icon">⚖️</div>
+        <div class="pipe-info">
+          <div class="pipe-name">Score Each Document</div>
+          <div class="pipe-detail">LLM scores every chunk 0.0 → 1.0 · thresholds: 0.3 / 0.7</div>
+        </div>
+      </div>
+
+      <div class="pipe-arrow"></div>
+
+      <!-- FORK -->
+      <div class="pipe-fork">
+        <div class="fork-label">VERDICT → ROUTING DECISION</div>
+        <div class="fork-branches">
+
+          <!-- CORRECT -->
+          <div class="fork-branch">
+            <div class="fork-verdict correct">CORRECT</div>
+            <div class="fork-arrow"></div>
+            <div class="fork-step">any score > 0.7</div>
+            <div class="fork-arrow"></div>
+            <div class="fork-step">skip web search</div>
+            <div class="fork-arrow"></div>
+            <div class="fork-step">use local docs only</div>
+          </div>
+
+          <!-- AMBIGUOUS -->
+          <div class="fork-branch">
+            <div class="fork-verdict ambiguous">AMBIGUOUS</div>
+            <div class="fork-arrow"></div>
+            <div class="fork-step">mixed scores</div>
+            <div class="fork-arrow"></div>
+            <div class="fork-step">rewrite query →<br/>web search</div>
+            <div class="fork-arrow"></div>
+            <div class="fork-step">local + web docs</div>
+          </div>
+
+          <!-- INCORRECT -->
+          <div class="fork-branch">
+            <div class="fork-verdict incorrect">INCORRECT</div>
+            <div class="fork-arrow"></div>
+            <div class="fork-step">all scores &lt; 0.3</div>
+            <div class="fork-arrow"></div>
+            <div class="fork-step">rewrite query →<br/>web search</div>
+            <div class="fork-arrow"></div>
+            <div class="fork-step">web docs only</div>
+          </div>
+
+        </div>
+      </div>
+
+      <div class="fork-merge-arrow"></div>
+
+      <div class="pipe-node green">
+        <div class="pipe-icon green">✂️</div>
+        <div class="pipe-info">
+          <div class="pipe-name">Sentence-Level Refinement</div>
+          <div class="pipe-detail">Decompose context → LLM filter keeps / drops each sentence</div>
+        </div>
+      </div>
+
+      <div class="pipe-arrow"></div>
+
+      <div class="pipe-node green">
+        <div class="pipe-icon green">✨</div>
+        <div class="pipe-info">
+          <div class="pipe-name">Generate</div>
+          <div class="pipe-detail">Answer grounded in verified, filtered context only</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<hr class="divider"/>
+
+<!-- FEATURES -->
+<section id="features">
+  <div class="section-inner">
+    <div class="section-label">Features</div>
+    <h2 class="section-title">What makes C-RAG different</h2>
+    <p class="section-desc">Every stage between retrieval and generation has a job — nothing reaches the LLM unchecked.</p>
+
+    <div class="features-grid">
+      <div class="feature-card">
+        <div class="feature-icon">⚖️</div>
+        <div class="feature-title">Score-Based Grading</div>
+        <div class="feature-text">Each retrieved chunk gets a relevance score in [0, 1]. Thresholds at 0.3 and 0.7 determine the routing verdict — no binary pass/fail.</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🌐</div>
+        <div class="feature-title">Conditional Web Fallback</div>
+        <div class="feature-text">Tavily web search is only triggered when local documents are weak or irrelevant. CORRECT verdicts skip the web entirely for speed.</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">✂️</div>
+        <div class="feature-title">Sentence-Level Filtering</div>
+        <div class="feature-text">Context is decomposed to individual sentences. An LLM judge filters each one — only sentences that directly answer the question survive.</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🔀</div>
+        <div class="feature-title">LangGraph State Machine</div>
+        <div class="feature-text">Built on LangGraph with typed state, conditional edges, and explicit routing. Every decision point is inspectable and auditable.</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🦙</div>
+        <div class="feature-title">Fully Local by Default</div>
+        <div class="feature-text">Runs on Ollama (llama3.1 + embeddinggemma) — no OpenAI key needed. Swap any model by changing one line.</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🔌</div>
+        <div class="feature-title">Modular Nodes</div>
+        <div class="feature-text">Each pipeline stage is a standalone function. Swap the retriever, embeddings, LLM, or web search tool without touching the graph.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<hr class="divider"/>
+
+<!-- SETUP -->
+<section id="setup">
+  <div class="section-inner">
+    <div class="section-label">Getting Started</div>
+    <h2 class="section-title">Up and running in minutes</h2>
+    <p class="section-desc">You need Ollama running locally and a free Tavily API key. Everything else is Python.</p>
+
+    <div class="setup-steps">
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-content">
+          <div class="step-title">Clone and install</div>
+          <pre>git clone https://github.com/Darsh-Nandu/Corrective-Retrieval-Augmented-Generation.git
+cd Corrective-Retrieval-Augmented-Generation
+python -m venv crag_venv && source crag_venv/bin/activate
+pip install -r requirements.txt</pre>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-content">
+          <div class="step-title">Install Ollama models</div>
+          <div class="step-text">Download <a href="https://ollama.ai" target="_blank" style="color:var(--primary)">Ollama</a>, then pull the required models:</div>
+          <pre>ollama pull llama3.1
+ollama pull embeddinggemma:latest</pre>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-num">3</div>
+        <div class="step-content">
+          <div class="step-title">Add your Tavily API key</div>
+          <div class="step-text">Get a free key at <a href="https://tavily.com" target="_blank" style="color:var(--primary)">tavily.com</a> — used for web search fallback.</div>
+          <pre>cp .env.example .env
+# Edit .env and add your key:
+<code>TAVILY_API_KEY=tvly-your-key-here</code></pre>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-num">4</div>
+        <div class="step-content">
+          <div class="step-title">Add your documents and run</div>
+          <div class="step-text">Drop PDFs into the <code style="color:var(--green)">documents/</code> folder, then ask a question:</div>
+          <pre>python main.py "What is the difference between batch and layer normalization?"
+
+# Or with verbose intermediate state:
+python main.py "Explain attention mechanisms" --verbose</pre>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<hr class="divider"/>
+
+<footer>
+  <div>C-RAG — MIT License · Built by <a href="https://github.com/Darsh-Nandu" target="_blank">Darsh-Nandu</a></div>
+  <div style="display:flex;gap:20px">
+    <a href="https://github.com/Darsh-Nandu/Corrective-Retrieval-Augmented-Generation" target="_blank">GitHub</a>
+    <a href="https://github.com/Darsh-Nandu/Corrective-Retrieval-Augmented-Generation/issues" target="_blank">Issues</a>
+  </div>
+</footer>
+
+</body>
+</html>

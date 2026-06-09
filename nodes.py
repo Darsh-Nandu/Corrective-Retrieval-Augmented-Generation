@@ -105,7 +105,7 @@ def eval_each_doc_node(state: State) -> dict:
 # Sentance Level Decomposer
 def decompose_to_sentances(text: str) -> list[str]:
     text = re.sub(r"\s+", " ", text).strip()
-    sentances = re.split(r"(?<=[.1?])\s+", text)
+    sentances = re.split(r"(?<=[.!?])\s+", text)
     return [s.strip() for s in sentances if len(s.strip()) > 20]
 
 # Filter (LLM Judge)
